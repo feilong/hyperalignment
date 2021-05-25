@@ -89,6 +89,37 @@ class MovieDataset(object):
     #     return ds, lengths
 
 
+class SiemensRaidersDataset(MovieDataset):
+    def __init__(self, flavor='fmriprep_global-mc-reg', version='20-2-0', surf_type='fsaverage', masked=True):
+        super().__init__(dset_name='siemens-raiders', flavor=flavor, version=version, surf_type=surf_type, masked=masked)
+        self.movie_task = 'movie'
+        self.task_info = [
+            ['movie', (1, 2, 3, 4)],
+            ['actions', (1, 2, 3, 4, 5, 6, 7, 8)],
+        ]
+
+    def load_data(self, sid, lr, task, run, chop=True, z=True, mask=True):
+        fn = f'{self.data_dir}/{sid}_{lr}h_{task}_{run:02d}.npy'
+        data = np.load(fn)
+        if mask:
+            if not self.masked:
+                m = self.masks['lr'.index(lr)][:data.shape[1]]
+                data = data[:, m]
+        else:
+            if self.masked:
+                raise ValueError
+        if chop:
+            if task == 'movie':
+                if run == 1:
+                    data = data[:-10]
+                elif run == 4:
+                    data = data[10:]
+                else:
+                    data = data[10:-10]
+        if z:
+            data = np.nan_to_num(zscore(data, axis=0))
+        return data
+
 
 class ForrestDataset(MovieDataset):
     def __init__(self, flavor='fmriprep_global-mc-reg', version='20-1-1', surf_type='fsaverage'):
