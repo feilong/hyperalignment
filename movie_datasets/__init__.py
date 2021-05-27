@@ -97,6 +97,13 @@ class SiemensRaidersDataset(MovieDataset):
             ['movie', (1, 2, 3, 4)],
             ['actions', (1, 2, 3, 4, 5, 6, 7, 8)],
         ]
+        # 8 + 8 + 7 subjects, 7 + 7 + 6 with localizers
+        self.subject_sets['fold1_1'] = ['sid000005', 'sid000007', 'sid000009', 'sid000010', 'sid000012', 'sid000013', 'sid000020', 'sid000021']
+        self.subject_sets['fold1_2'] = ['sid000024', 'sid000029', 'sid000034', 'sid000052', 'sid000102', 'sid000114', 'sid000120', 'sid000134', 'sid000142', 'sid000278', 'sid000416', 'sid000433', 'sid000499', 'sid000522', 'sid000535']
+        self.subject_sets['fold2_1'] = ['sid000024', 'sid000029', 'sid000034', 'sid000052', 'sid000102', 'sid000114', 'sid000120', 'sid000134']
+        self.subject_sets['fold2_2'] = ['sid000005', 'sid000007', 'sid000009', 'sid000010', 'sid000012', 'sid000013', 'sid000020', 'sid000021', 'sid000142', 'sid000278', 'sid000416', 'sid000433', 'sid000499', 'sid000522', 'sid000535']
+        self.subject_sets['fold3_1'] = ['sid000142', 'sid000278', 'sid000416', 'sid000433', 'sid000499', 'sid000522', 'sid000535']
+        self.subject_sets['fold3_2'] = ['sid000005', 'sid000007', 'sid000009', 'sid000010', 'sid000012', 'sid000013', 'sid000020', 'sid000021', 'sid000024', 'sid000029', 'sid000034', 'sid000052', 'sid000102', 'sid000114', 'sid000120', 'sid000134']
 
     def load_data(self, sid, lr, task, run, chop=True, z=True, mask=True):
         fn = f'{self.data_dir}/{sid}_{lr}h_{task}_{run:02d}.npy'
