@@ -124,18 +124,27 @@ def compute_procrustes_template(
     return common_space
 
 
-def compute_template(dss, sl=None, kind='procrustes', max_npc=None):
-    if kind == 'procrustes':
-        return compute_procrustes_template(dss=dss, sl=sl, reflection=True, scaling=False, zscore_common=True)
+def compute_template(dss, sl=None, kind='procrustes', max_npc=None, common_topography=False):
     mapping = {
         'pca': compute_PCA_template,
         'pcav1': compute_PCA_var1_template,
         'pcav2': compute_PCA_var2_template,
         'cls': compute_procrustes_template,
     }
-    if kind in mapping:
-        return mapping[kind](dss=dss, sl=sl, max_npc=max_npc)
-    raise ValueError
+    if kind == 'procrustes':
+        tmpl = compute_procrustes_template(dss=dss, sl=sl, reflection=True, scaling=False, zscore_common=True)
+    elif kind in mapping:
+        tmpl = mapping[kind](dss=dss, sl=sl, max_npc=max_npc)
+    else:
+        raise ValueError
+
+    if common_topography:
+        if sl is not None:
+            dss = dss[:, :, sl]
+        ns, nt, nv = dss.shape
+        T = procrustes(np.tile(tmpl, (ns, 1)), dss.reshape(ns*nt, nv))
+        tmpl = tmpl @ T
+    return tmpl
 
 
 if __name__ == '__main__':
