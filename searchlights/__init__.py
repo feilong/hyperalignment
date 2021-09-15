@@ -11,6 +11,16 @@ def get_searchlights(lr, radius, tmpl='fsaverage', freq=32):
     return sls
 
 
+def get_searchlights_with_distances(lr, radius, tmpl='fsaverage', freq=32):
+    assert tmpl.startswith('fsaverage')
+    icoorder = {32: 5, 64: 6, 128: 7}[freq]
+    npz_fn = f'{DIR}/{tmpl}_{lr}h_{radius}mm_icoorder{icoorder}.npz'
+    npz = np.load(npz_fn)
+    sls = np.array_split(npz['concatenated'], npz['sections'])
+    dists = np.array_split(npz['concatenated_dists'], npz['sections'])
+    return sls, dists
+
+
 if __name__ == '__main__':
     for lr in 'lr':
         for radius in [10, 13, 15, 20]:
