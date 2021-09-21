@@ -89,6 +89,16 @@ class MovieDataset(object):
     #     return ds, lengths
 
 
+class HyperfaceDataset(MovieDataset):
+    def __init__(self, flavor='fmriprep_global-mc-reg_renamed', version='20-1-1', surf_type='fsaverage', masked=False):
+        super().__init__(dset_name='hyperface', flavor=flavor, version=version, surf_type=surf_type, masked=masked)
+        self.movie_task = 'budapest'
+        self.task_info = [
+            ['budapest', (1, 2, 3, 4, 5)],
+            ['localizer', (1, 2, 3, 4)],
+        ]
+
+
 class SiemensRaidersDataset(MovieDataset):
     def __init__(self, flavor='fmriprep_global-mc-reg', version='20-2-0', surf_type='fsaverage', masked=True):
         super().__init__(dset_name='siemens-raiders', flavor=flavor, version=version, surf_type=surf_type, masked=masked)
@@ -149,8 +159,8 @@ class ForrestDataset(MovieDataset):
 
 
 class ID1000Dataset(MovieDataset):
-    def __init__(self, flavor='fmriprep_global-mc-reg', version='1-4-1', surf_type='fsaverage5'):
-        super().__init__(dset_name='id1000', flavor=flavor, version=version, surf_type=surf_type)
+    def __init__(self, flavor='fmriprep_global-mc-reg', version='1-4-1', surf_type='fsaverage5', masked=True):
+        super().__init__(dset_name='id1000', flavor=flavor, version=version, surf_type=surf_type, masked=masked)
         self.movie_task = 'movie'
         self.task_info = [
             ['movie', (1, )],
@@ -165,8 +175,8 @@ class ID1000Dataset(MovieDataset):
 
 
 class CamCANDataset(MovieDataset):
-    def __init__(self, flavor='fmriprep_global-mc-reg', version='20-2-0', surf_type='fsaverage'):
-        super().__init__(dset_name='camcan', flavor=flavor, version=version, surf_type=surf_type)
+    def __init__(self, flavor='fmriprep_global-mc-reg', version='20-2-0', surf_type='fsaverage', masked=True):
+        super().__init__(dset_name='camcan', flavor=flavor, version=version, surf_type=surf_type, masked=masked)
         self.movie_task = 'movie'
         self.task_info = [
             ['movie', (1, )],
