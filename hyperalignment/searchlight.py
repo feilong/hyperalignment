@@ -23,7 +23,7 @@ def compute_searchlight_weights(sls, dists, radius):
     return weights
 
 
-def searchlight_procrustes(X, Y, sls, dists, radius, T0=None, reflection=True, scaling=False, weighted=True):
+def searchlight_procrustes(X, Y, sls, dists=None, radius=None, T0=None, reflection=True, scaling=False, weighted=True):
     T = np.zeros((X.shape[1], Y.shape[1])) if T0 is None else T0.copy()
     if weighted:
         weights = compute_searchlight_weights(sls, dists, radius)
