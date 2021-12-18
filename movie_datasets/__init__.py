@@ -89,6 +89,8 @@ class MovieDataset(object):
     #     return ds, lengths
 
 
+# To use the old 1.4.1 version of the dataset:
+# HyperfaceDataset(version='1-4-1', masked=True)
 class HyperfaceDataset(MovieDataset):
     def __init__(self, flavor='fmriprep_global-mc-reg_renamed', version='20-1-1', surf_type='fsaverage', masked=False):
         super().__init__(dset_name='hyperface', flavor=flavor, version=version, surf_type=surf_type, masked=masked)
