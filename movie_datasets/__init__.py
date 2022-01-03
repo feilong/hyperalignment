@@ -235,3 +235,13 @@ class RaidersDataset(MovieDataset):
 
     def load_subj_all_data(self):
         raise NotImplementedError
+
+
+class WhiplashDataset(MovieDataset):
+    def __init__(self, flavor='fmriprep_global-mc-reg', version='20-0-3', surf_type='fsaverage'):
+        super().__init__(dset_name='whiplash', flavor=flavor, version=version, surf_type=surf_type)
+        self.movie_task = 'whiplash'
+        self.task_info = [
+            ['whiplash', (1, 2)],
+        ]
+        self.subject_sets['all'] = [sid for sid in self.all_subjects if 'whiplash' in self.sid_tasks[sid]]
