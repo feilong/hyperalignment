@@ -205,7 +205,7 @@ class RaidersDataset(MovieDataset):
         self.movie_task = 'raiders'
         self.task_info = [
             ['raiders', (1, 2, 3, 4, 5, 6, 7, 8)],
-            # TODO
+            ['localizer', (1, 2, 3, 4)],
         ]
         self.subject_sets['all'] = [sid for sid in self.all_subjects if 'raiders' in self.sid_tasks[sid]]
         self.subject_sets['8ch'] = [
