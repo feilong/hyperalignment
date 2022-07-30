@@ -1,7 +1,7 @@
 import numpy as np
 from datetime import datetime
 
-from .linalg import safe_svd
+from hyperalignment.linalg import safe_svd
 
 
 def ridge_grid(X, y, alphas, npcs, train_idx=None):
@@ -9,7 +9,7 @@ def ridge_grid(X, y, alphas, npcs, train_idx=None):
         X = X[train_idx]
         y = y[train_idx]
     # Assumes data have zero mean
-    U, s, Vt = safe_svd(X, demean=False)
+    U, s, Vt = safe_svd(X, remove_mean=False)
     n_npcs = len(npcs)
 
     d = s[:, np.newaxis] / (alphas[np.newaxis, :] + (s**2)[:, np.newaxis])  # (k, n_alphas)
