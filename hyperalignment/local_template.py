@@ -1,14 +1,16 @@
 import numpy as np
 from scipy.stats import zscore
+from scipy.linalg import LinAlgError
 from sklearn.decomposition import PCA
 from sklearn.utils.extmath import randomized_svd
 
-from .linalg import safe_svd
-from .procrustes import procrustes
+from hyperalignment.linalg import safe_svd
+from hyperalignment.procrustes import procrustes
 
 
 def PCA_decomposition(dss, max_npc=None, flavor='sklearn', adjust_ns=False, demean=True):
-    """
+    """Decompose concatenated data matrices using PCA/SVD.
+
     Parameters
     ----------
     dss : ndarray of shape (ns, nt, nv)
@@ -16,7 +18,7 @@ def PCA_decomposition(dss, max_npc=None, flavor='sklearn', adjust_ns=False, deme
     flavor : {'sklearn', 'svd'}
     adjust_ns : bool
         Whether to adjust the variance of the output so that it doesn't increase with the number of subjects.
-    demean: bool
+    demean : bool
         Whether to remove the mean of the columns prior to SVD.
 
     Returns
