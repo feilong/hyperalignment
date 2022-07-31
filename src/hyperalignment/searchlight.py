@@ -1,7 +1,9 @@
 import numpy as np
+import functools
 from joblib import Parallel, delayed
 
 from hyperalignment.procrustes import procrustes
+from hyperalignment.ridge import ridge
 from hyperalignment.local_template import compute_template
 
 
@@ -23,17 +25,31 @@ def compute_searchlight_weights(sls, dists, radius):
     return weights
 
 
-def searchlight_procrustes(X, Y, sls, dists, radius, T0=None, reflection=True, scaling=False, weighted=True):
+def searchlight_hyperalignment(X, Y, sls, dists, radius, T0, sl_func, weighted=True):
     T = np.zeros((X.shape[1], Y.shape[1])) if T0 is None else T0.copy()
     if weighted:
         weights = compute_searchlight_weights(sls, dists, radius)
         for sl, w in zip(sls, weights):
-            t = procrustes(X[:, sl], Y[:, sl], reflection=reflection, scaling=scaling)
+            t = sl_func(X[:, sl], Y[:, sl])
             T[np.ix_(sl, sl)] += t * w[np.newaxis]
     else:
         for sl in sls:
-            t = procrustes(X[:, sl], Y[:, sl], reflection=reflection, scaling=scaling)
+            t = sl_func(X[:, sl], Y[:, sl])
             T[np.ix_(sl, sl)] += t
+    return T
+
+
+def searchlight_procrustes(X, Y, sls, dists, radius, T0=None, reflection=True, scaling=False, weighted=True):
+    sl_func = functools.partial(procrustes, reflection=reflection, scaling=scaling)
+    T = searchlight_hyperalignment(
+        X, Y, sls, dists, radius, T0=T0, sl_func=sl_func, weighted=weighted)
+    return T
+
+
+def searchlight_ridge(X, Y, sls, dists, radius, T0=None, alpha=1e3, weighted=True):
+    sl_func = functools.partial(ridge, alpha=alpha)
+    T = searchlight_hyperalignment(
+        X, Y, sls, dists, radius, T0=T0, sl_func=sl_func, weighted=weighted)
     return T
 
 

@@ -4,6 +4,14 @@ from datetime import datetime
 from hyperalignment.linalg import safe_svd
 
 
+def ridge(X, Y, alpha):
+    U, s, Vt = safe_svd(X, remove_mean=False)
+    d = s / (alpha + s**2)
+    d_UT_Y = d[:, np.newaxis] * (U.T @ Y)
+    betas = Vt.T @ d_UT_Y
+    return betas
+
+
 def ridge_grid(X, y, alphas, npcs, train_idx=None):
     if train_idx is not None:
         X = X[train_idx]
