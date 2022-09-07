@@ -11,7 +11,7 @@ def compute_searchlight_weights(sls, dists, radius):
     """
     weights = compute_searchlight_weights(sls, dists, radius)
     """
-    nv = len(sls)
+    nv = np.concatenate(sls).max() + 1
     weights_sum = np.zeros((nv, ))
     for sl, d in zip(sls, dists):
         w = (radius - d) / radius
