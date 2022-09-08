@@ -1,4 +1,7 @@
 import numpy as np
+from joblib import Parallel, delayed
+
+from hyperalignment.searchlight import searchlight_hyperalignment
 
 
 def compute_ensemble_indices(nt, n_perms=10, n_folds=5, blocksize=4, buffersize=4, seed=0, mask=None):
@@ -50,3 +53,38 @@ def compute_ensemble_indices(nt, n_perms=10, n_folds=5, blocksize=4, buffersize=
             test_idx_li.append(test_idx)
 
     return train_idx_li, test_idx_li
+
+
+def searchlight_hyperalignment_for_ensemble(X, Y, train_idx, sls, sl_weights, mat0, sl_func):
+    X = X[train_idx]
+    Y = Y[train_idx]
+    xmat = mat0.copy()
+    for sl, w in zip(sls, sl_weights):
+        t = sl_func(X[:, sl], Y[:, sl])
+        xmat[np.ix_(sl, sl)] += t * w[np.newaxis]
+    return xmat.data
+
+
+def ensemble_searchlight_hyperalignment(
+        X, Y, sls, sl_weights, mat0, train_idx_li, test_idx_li, sl_func, n_jobs=1):
+
+    with Parallel(n_jobs=n_jobs, verbose=1) as parallel:
+        results = parallel(
+            delayed(searchlight_hyperalignment_for_ensemble)(
+                X, Y, train_idx, sls, sl_weights, mat0, sl_func)
+            for train_idx in train_idx_li)
+
+    nt, nv = Y.shape
+    counts = np.zeros((nt, ), dtype=int)
+    Yhat = np.zeros_like(y)
+    for d, test_idx in zip(results, test_idx_li):
+        xmat = mat0.copy()
+        xmat.data = d
+        Yhat[test_idx] += X[test_idx] @ T
+        counts[test_idx] += 1
+    Yhat /= counts[:, np.newaxis]
+
+    xmat = mat0.copy()
+    xmat.data = np.mean(results, axis=0)
+
+    return xmat, Yhat
