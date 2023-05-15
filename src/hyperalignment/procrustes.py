@@ -73,12 +73,3 @@ def procrustes(X, Y, reflection=True, scaling=False):
         T *= scale
 
     return T
-
-
-def searchlight_procrustes(X, Y, sls, reflection=True, scaling=False):
-    counts = np.zeros((X.shape[1], ))
-    T = np.zeros((X.shape[1], Y.shape[1]))
-    for sl in sls:
-        T[np.ix_(sl, sl)] += procrustes(X[:, sl], Y[:, sl], reflection=reflection, scaling=scaling)
-        counts[sl] += 1
-    return T, counts

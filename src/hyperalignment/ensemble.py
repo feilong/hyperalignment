@@ -1,8 +1,6 @@
 import numpy as np
 from joblib import Parallel, delayed
 
-from hyperalignment.searchlight import searchlight_hyperalignment
-
 
 def compute_ensemble_indices(nt, n_perms=10, n_folds=5, blocksize=4, buffersize=4, seed=0, mask=None):
     rng = np.random.default_rng(seed=seed)
