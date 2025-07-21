@@ -8,21 +8,34 @@ from hyperalignment.procrustes import procrustes
 from hyperalignment.ridge import ridge
 
 
-def compute_searchlight_weights(sls, dists, radius):
+def compute_searchlight_weights(sls, dists=None, radius=None):
     """
     weights = compute_searchlight_weights(sls, dists, radius)
     """
     nv = int(np.concatenate(sls).max()) + 1
     weights_sum = np.zeros((nv,))
+    weights = []
+
+    if dists is None:
+        for sl in sls:
+            weights_sum[sl] += 1
+
+        for sl in sls:
+            w = 1.0 / weights_sum[sl]
+            weights.append(w)
+
+        return weights
+
+    # If dists is provided, use distance-based weighting
     for sl, d in zip(sls, dists):
         w = (radius - d) / radius
         weights_sum[sl] += w
-    # print(np.percentile(weights_sum, np.linspace(0, 100, 11)))
-    weights = []
+
     for sl, d in zip(sls, dists):
         w = (radius - d) / radius
         w /= weights_sum[sl]
         weights.append(w)
+
     return weights
 
 
