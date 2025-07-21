@@ -10,7 +10,33 @@ from hyperalignment.ridge import ridge
 
 def compute_searchlight_weights(sls, dists=None, radius=None):
     """
-    weights = compute_searchlight_weights(sls, dists, radius)
+    Compute the weights used for combining searchlight models.
+    If `dists` is None, uniform weights are used.
+    If `dists` is provided, distance-based weights are computed, where the
+    weight for each vertex is highest at the center of the searchlight and
+    decreases linearly to zero at the edge of the searchlight, scaled by the
+    radius.
+
+    Typical usage:
+    >>> weights = compute_searchlight_weights(sls, dists, radius)
+
+    Parameters
+    ----------
+    sls : list of ndarrays
+        Searchlight indices, where each ndarray contains the indices of the
+        vertices in the searchlight.
+    dists : list of ndarrays or None, default=None
+        Each array contains the distances of the vertices in the searchlight
+        to the center of the searchlight, used for distance-based weighting.
+        If None, uniform weights are used.
+    radius : float or None, default=None
+        The radius of the searchlight, used for distance-based weighting.
+
+    Returns
+    -------
+    weights : list of ndarrays
+        Each ndarray contains the weights for the vertices in the corresponding
+        searchlight. The weights sum to 1 for each vertex.
     """
     nv = int(np.concatenate(sls).max()) + 1
     weights_sum = np.zeros((nv,))
@@ -27,6 +53,7 @@ def compute_searchlight_weights(sls, dists=None, radius=None):
         return weights
 
     # If dists is provided, use distance-based weighting
+    assert radius is not None, "Radius must be provided if distances are given."
     for sl, d in zip(sls, dists):
         w = (radius - d) / radius
         weights_sum[sl] += w
