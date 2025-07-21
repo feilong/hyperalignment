@@ -41,3 +41,20 @@ class TestSearchlightWeights:
             weights_sum[sl] += w
 
         np.testing.assert_allclose(weights_sum, 1.0)
+
+    def test_sparse_output(self):
+        radius = 20
+        sls, dists = nb.sls("l", radius, return_dists=True)
+        weights = compute_searchlight_weights(sls, dists, radius, return_sparse=True)
+
+        assert weights.shape[0] == len(sls)
+        assert weights.shape[1] == int(np.concatenate(sls).max()) + 1
+
+        np.testing.assert_allclose(weights.sum(axis=0), 1.0)
+
+        weights = compute_searchlight_weights(sls, return_sparse=True)
+
+        assert weights.shape[0] == len(sls)
+        assert weights.shape[1] == int(np.concatenate(sls).max()) + 1
+
+        np.testing.assert_allclose(weights.sum(axis=0), 1.0)
