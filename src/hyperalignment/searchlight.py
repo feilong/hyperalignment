@@ -58,16 +58,26 @@ def searchlight_ridge(X, Y, sls, dists, radius, T0=None, alpha=1e3, weighted=Tru
     return T
 
 
-def searchlight_template(dss, sls, dists, radius, n_jobs=1, tmpl_kind="pca"):
-    weights = compute_searchlight_weights(sls, dists, radius)
+def searchlight_template(dss, sls, dists, radius, n_jobs=1, tmpl_kind="pca",weighted=True):
+
     tmpl = np.zeros_like(dss[0])
+    if weighted:
+            weights = compute_searchlight_weights(sls, dists, radius)
 
     if n_jobs == 1:
-        for sl, w in zip(sls, weights):
-            local_template = compute_template(
-                dss, sl=sl, kind=tmpl_kind, max_npc=len(sl), common_topography=True
-            )
-            tmpl[:, sl] += local_template * w[np.newaxis]
+        if weighted:
+            for sl, w in zip(sls, weights):
+                local_template = compute_template(
+                    dss, sl=sl, kind=tmpl_kind, max_npc=len(sl), common_topography=True
+                )
+                tmpl[:, sl] += local_template * w[np.newaxis]
+        else:
+            for sl in sls:
+                local_template = compute_template(
+                    dss, sl=sl, kind=tmpl_kind, max_npc=len(sl), common_topography=True
+                )
+                tmpl[:, sl] += local_template
+
     else:
         with Parallel(n_jobs=n_jobs, batch_size=1, verbose=1) as parallel:
             local_templates = parallel(
@@ -76,7 +86,10 @@ def searchlight_template(dss, sls, dists, radius, n_jobs=1, tmpl_kind="pca"):
                 )
                 for sl in sls
             )
-
-        for local_template, w, sl in zip(local_templates, weights, sls):
-            tmpl[:, sl] += local_template * w[np.newaxis]
+        if weighted:
+            for local_template, w, sl in zip(local_templates, weights, sls):
+                tmpl[:, sl] += local_template * w[np.newaxis]
+        else:
+            for local_template, sl in zip(local_templates, sls):
+                tmpl[:, sl] += local_template
     return tmpl
