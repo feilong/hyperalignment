@@ -1,6 +1,7 @@
 import functools
 
 import numpy as np
+import scipy.sparse as sparse
 from joblib import Parallel, delayed
 
 from hyperalignment.local_template import compute_template
@@ -8,21 +9,73 @@ from hyperalignment.procrustes import procrustes
 from hyperalignment.ridge import ridge
 
 
-def compute_searchlight_weights(sls, dists, radius):
+def compute_searchlight_weights(sls, dists=None, radius=None, return_sparse=False):
     """
-    weights = compute_searchlight_weights(sls, dists, radius)
+    Compute the weights used for combining searchlight models.
+    If `dists` is None, uniform weights are used.
+    If `dists` is provided, distance-based weights are computed, where the
+    weight for each vertex is highest at the center of the searchlight and
+    decreases linearly to zero at the edge of the searchlight.
+
+    Typical usage:
+    >>> weights = compute_searchlight_weights(sls, dists, radius)
+    >>> mat = compute_searchlight_weights(
+    ...     sls, dists, radius, return_sparse=True)
+
+    Parameters
+    ----------
+    sls : list of ndarrays
+        Searchlight indices, where each ndarray contains the indices of the
+        vertices in the searchlight.
+    dists : list of ndarrays or None, default=None
+        Each array contains the distances of the vertices in the searchlight
+        to the center of the searchlight, used for distance-based weighting.
+        If None, uniform weights are used.
+    radius : float or None, default=None
+        The radius of the searchlight, used for distance-based weighting.
+
+    Returns
+    -------
+    weights : list of ndarrays, optional
+        Each ndarray contains the weights for the vertices in the corresponding
+        searchlight. The weights sum to 1 for each vertex. Returned only if
+        `return_sparse` is False.
+    mat : sparse matrix, optional
+        A sparse matrix where each row corresponds to a searchlight and each
+        column corresponds to a vertex. Returned only if `return_sparse` is
+        True.
     """
-    nv = np.concatenate(sls).max() + 1
+    nv = int(np.concatenate(sls).max()) + 1
     weights_sum = np.zeros((nv,))
-    for sl, d in zip(sls, dists):
-        w = (radius - d) / radius
-        weights_sum[sl] += w
-    # print(np.percentile(weights_sum, np.linspace(0, 100, 11)))
     weights = []
-    for sl, d in zip(sls, dists):
-        w = (radius - d) / radius
-        w /= weights_sum[sl]
-        weights.append(w)
+
+    if dists is None:
+        for sl in sls:
+            weights_sum[sl] += 1
+
+        for sl in sls:
+            w = 1.0 / weights_sum[sl]
+            weights.append(w)
+
+    else:
+        # If dists is provided, use distance-based weighting
+        assert radius is not None, "Radius must be provided if distances are given."
+        for sl, d in zip(sls, dists):
+            w = (radius - d) / radius
+            weights_sum[sl] += w
+
+        for sl, d in zip(sls, dists):
+            w = (radius - d) / radius
+            w /= weights_sum[sl]
+            weights.append(w)
+
+    if return_sparse:
+        mat = sparse.lil_array((len(sls), nv))
+        for i, w in enumerate(weights):
+            mat[i, sls[i]] = w
+        mat = mat.tocsr()
+        return mat
+
     return weights
 
 
