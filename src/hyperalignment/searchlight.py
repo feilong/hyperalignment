@@ -111,7 +111,7 @@ def searchlight_ridge(X, Y, sls, dists, radius, T0=None, alpha=1e3, weighted=Tru
     return T
 
 
-def searchlight_template(dss, sls, dists, radius, n_jobs=1, tmpl_kind="pca",weighted=True):
+def searchlight_template(dss, sls, dists, radius, n_jobs=1, tmpl_kind="pca", weighted=True):
 
     tmpl = np.zeros_like(dss[0])
     if weighted:
