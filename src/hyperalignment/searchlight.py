@@ -79,57 +79,158 @@ def compute_searchlight_weights(sls, dists=None, radius=None, return_sparse=Fals
     return weights
 
 
-def searchlight_hyperalignment(X, Y, sls, dists, radius, T0, sl_func, weighted=True):
-    T = np.zeros((X.shape[1], Y.shape[1])) if T0 is None else T0.copy()
-    if weighted:
-        weights = compute_searchlight_weights(sls, dists, radius)
-        for sl, w in zip(sls, weights):
-            t = sl_func(X[:, sl], Y[:, sl])
-            T[np.ix_(sl, sl)] += t * w[np.newaxis]
+def searchlight_hyperalignment(
+    X, Y, sls, sls_Y=None, sl_func=None, mat0=None, weights=None
+):
+    """
+    Searchlight hyperalignment.
+
+    Parameters
+    ----------
+    X : ndarray of shape (n_samples, n_features_X)
+        The first data matrix, to be aligned to ``Y``.
+    Y : ndarray of shape (n_samples, n_features_Y)
+        The second data matrix, the target for alignment.
+    sls : list of ndarrays
+        Each ndarray contains the indices of the vertices in the searchlight
+        for the first data matrix.
+    sls_Y : list of ndarrays or None, default=None
+        Searchlight indices for the second data matrix, if different from
+        ``sls``.
+    sl_func : callable
+        A function that takes two arrays and computes the transformation
+        between them.
+    mat0 : sparse matrix or None, default=None
+        The sparse matrix to initialize the transformation, because changing
+        sparse matrix sparsity is very slow. If None, initialize using a dense
+        array of zeros.
+    weights : list of ndarrays or None, default=None
+        Weights for combining searchlight transformations. If None, simply add
+        the transformations without weighting.
+
+    Returns
+    -------
+    mat : sparse matrix or ndarray
+        The resulting transformation matrix, where each row corresponds to a
+        vertex in ``X`` and each column corresponds to a vertex in ``Y``.
+    """
+    if sls_Y is None:
+        sls_Y = sls
+
+    mat = np.zeros((X.shape[1], Y.shape[1])) if mat0 is None else mat0.copy()
+
+    if weights is not None:
+        for sl_X, sl_Y, w in zip(sls, sls_Y, weights):
+            t = sl_func(X[:, sl_X], Y[:, sl_Y])
+            mat[np.ix_(sl_X, sl_Y)] += t * w[np.newaxis]
     else:
-        for sl in sls:
-            t = sl_func(X[:, sl], Y[:, sl])
-            T[np.ix_(sl, sl)] += t
-    return T
+        for sl_X, sl_Y in zip(sls, sls_Y):
+            t = sl_func(X[:, sl_X], Y[:, sl_Y])
+            mat[np.ix_(sl_X, sl_Y)] += t
+    return mat
 
 
 def searchlight_procrustes(
-    X, Y, sls, dists, radius, T0=None, reflection=True, scaling=False, weighted=True
+    X, Y, sls, sls_Y=None, mat0=None, reflection=True, scaling=False, weights=None
 ):
+    """
+    Searchlight hyperalignment using orthogonal Procrustes.
+
+    Parameters
+    ----------
+    X : ndarray of shape (n_samples, n_features_X)
+        The first data matrix, to be aligned to ``Y``.
+    Y : ndarray of shape (n_samples, n_features_Y)
+        The second data matrix, the target for alignment.
+    sls : list of ndarrays
+        Each ndarray contains the indices of the vertices in the searchlight
+        for the first data matrix.
+    sls_Y : list of ndarrays or None, default=None
+        Searchlight indices for the second data matrix, if different from
+        ``sls``.
+    mat0 : sparse matrix or None, default=None
+        The sparse matrix to initialize the transformation, because changing
+        sparse matrix sparsity is very slow. If None, initialize using a dense
+        array of zeros.
+    reflection : bool, default=True
+        Whether allows reflection in the transformation (True) or not (False).
+    scaling : bool, default=False
+        Whether allows global scaling (True) or not (False).
+    weights : list of ndarrays or None, default=None
+        Weights for combining searchlight transformations. If None, simply add
+        the transformations without weighting.
+
+    Returns
+    -------
+    mat : sparse matrix or ndarray
+        The resulting transformation matrix, where each row corresponds to a
+        vertex in ``X`` and each column corresponds to a vertex in ``Y``.
+    """
     sl_func = functools.partial(procrustes, reflection=reflection, scaling=scaling)
-    T = searchlight_hyperalignment(
-        X, Y, sls, dists, radius, T0=T0, sl_func=sl_func, weighted=weighted
+    xfm = searchlight_hyperalignment(
+        X, Y, sls, sls_Y=sls_Y, sl_func=sl_func, mat0=mat0, weights=weights
     )
-    return T
+    return xfm
 
 
-def searchlight_ridge(X, Y, sls, dists, radius, T0=None, alpha=1e3, weighted=True):
+def searchlight_ridge(X, Y, sls, sls_Y=None, mat0=None, alpha=1e3, weights=None):
+    """
+    Searchlight hyperalignment using ridge regression.
+
+    Parameters
+    ----------
+    X : ndarray of shape (n_samples, n_features_X)
+        The first data matrix, to be aligned to ``Y``.
+    Y : ndarray of shape (n_samples, n_features_Y)
+        The second data matrix, the target for alignment.
+    sls : list of ndarrays
+        Each ndarray contains the indices of the vertices in the searchlight
+        for the first data matrix.
+    sls_Y : list of ndarrays or None, default=None
+        Searchlight indices for the second data matrix, if different from
+        ``sls``.
+    mat0 : sparse matrix or None, default=None
+        The sparse matrix to initialize the transformation, because changing
+        sparse matrix sparsity is very slow. If None, initialize using a dense
+        array of zeros.
+    alpha : float, default=1e3
+        The regularization parameter for ridge regression.
+    weights : list of ndarrays or None, default=None
+        Weights for combining searchlight transformations. If None, simply add
+        the transformations without weighting.
+
+    Returns
+    -------
+    mat : sparse matrix or ndarray
+        The resulting transformation matrix, where each row corresponds to a
+        vertex in ``X`` and each column corresponds to a vertex in ``Y``.
+    """
     sl_func = functools.partial(ridge, alpha=alpha)
-    T = searchlight_hyperalignment(
-        X, Y, sls, dists, radius, T0=T0, sl_func=sl_func, weighted=weighted
+    xfm = searchlight_hyperalignment(
+        X, Y, sls, sls_Y=sls_Y, sl_func=sl_func, mat0=mat0, weights=weights
     )
-    return T
+    return xfm
 
 
-def searchlight_template(dss, sls, dists, radius, n_jobs=1, tmpl_kind="pca"):
+def searchlight_template(dms, sls, dists, radius, n_jobs=1, tpl_kind="pca"):
     weights = compute_searchlight_weights(sls, dists, radius)
-    tmpl = np.zeros_like(dss[0])
+    tpl = np.zeros_like(dms[0])
 
     if n_jobs == 1:
         for sl, w in zip(sls, weights):
             local_template = compute_template(
-                dss, sl=sl, kind=tmpl_kind, max_npc=len(sl), common_topography=True
+                dms, sl=sl, kind=tpl_kind, max_npc=len(sl), common_topography=True
             )
-            tmpl[:, sl] += local_template * w[np.newaxis]
+            tpl[:, sl] += local_template * w[np.newaxis]
     else:
         with Parallel(n_jobs=n_jobs, batch_size=1, verbose=1) as parallel:
             local_templates = parallel(
                 delayed(compute_template)(
-                    dss, sl=sl, kind=tmpl_kind, max_npc=len(sl), common_topography=True
+                    dms, sl=sl, kind=tpl_kind, max_npc=len(sl), common_topography=True
                 )
                 for sl in sls
             )
 
         for local_template, w, sl in zip(local_templates, weights, sls):
-            tmpl[:, sl] += local_template * w[np.newaxis]
-    return tmpl
+            tpl[:, sl] += local_template * w[np.newaxis]
+    return tpl
