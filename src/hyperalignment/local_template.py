@@ -15,7 +15,7 @@ def PCA_decomposition(
 
     Parameters
     ----------
-    dss : ndarray of shape (ns, nt, nv)
+    dss : ndarray of shape (ns, nt, nv) or list of length ns, each element is (nt,nv)
     max_npc : integer or None
     flavor : {'sklearn', 'svd'}
     adjust_ns : bool
@@ -28,8 +28,13 @@ def PCA_decomposition(
     XX : ndarray of shape (nt, npc)
     cc : ndarray of shape (npc, ns, nv)
     """
-    ns, nt, nv = dss.shape
-    X = dss.transpose(1, 0, 2).reshape(nt, ns * nv)
+    if isinstance(dss,list):
+        ns = len(dss)
+        nt,nv = dss[0].shape # arbitrarily using the first subject's voxel size as nv
+        X = np.concatenate(dss,axis=1)
+    else:
+        ns, nt, nv = dss.shape
+        X = dss.transpose(1, 0, 2).reshape(nt, ns * nv)
     if max_npc is not None:
         max_npc = min(max_npc, min(X.shape[0], X.shape[1]))
     if flavor == "sklearn":
@@ -224,6 +229,8 @@ def compute_procrustes_template(
 def compute_template(
     dss, sl=None, kind="procrustes", max_npc=None, common_topography=False, demean=False
 ):
+    if isinstance(dss,list):
+        assert kind.startswith("pca")
     mapping = {
         "pca": compute_PCA_template,
         "pcav1": compute_PCA_var1_template,
@@ -237,9 +244,11 @@ def compute_template(
     elif kind in mapping:
         tmpl = mapping[kind](dss=dss, sl=sl, max_npc=max_npc, demean=demean)
     else:
-        raise ValueError
+        raise ValueError(f"template kind {kind} not found")
 
     if common_topography:
+        if isinstance(dss,list):
+            raise ValueError("common_topography not available if voxel size differ across subjects")
         if sl is not None:
             dss = dss[:, :, sl]
         ns, nt, nv = dss.shape
