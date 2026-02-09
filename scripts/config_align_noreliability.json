@@ -1,0 +1,44 @@
+{
+  "dataset": "Budapest",
+  "outroot": "/dartfs/rc/lab/H/HaxbyLab/jiaxin/subcortical_hyperalignment/",
+  "extra_str": "ridgeCV_noreliabilityweighting",
+  "seeds": "aseg",
+  "targets": [
+    "onavg-ico8"
+  ],
+  "task": "budapest",
+  "run": [
+    1,
+    2,
+    3
+  ],
+  "subj": [
+    13,
+    14
+  ],
+  "template_dir": "/dartfs/rc/lab/H/HaxbyLab/jiaxin/subcortical_hyperalignment/templates",
+  "searchlight_radius": 20,
+  "searchlight_center": "onavg-ico32",
+  "surface_space": "onavg-ico32",
+  "volume_space": "mni-2mm",
+  "surface_resample": "1step_pial_overlap",
+  "volume_resample": "1step_linear_overlap",
+  "prep": "default",
+  "zscore_axis": "searchlight",
+  "separate_zscore": true,
+  "saved_beta_root": "/dartfs/rc/lab/H/HaxbyLab/datasets/",
+  "dry_run": false,
+  "stage": "align",
+  "saved_beta_path": "/dartfs/rc/lab/H/HaxbyLab/datasets/saved_confound_betas/default/Budapest",
+  "alignfunc": "ridgeCV",
+  "ridge_alpha": [
+    10.0,
+    100.0,
+    1000.0,
+    10000.0,
+    100000.0,
+    1000000.0,
+    10000000.0,
+    100000000.0
+  ]
+}
