@@ -80,7 +80,7 @@ def compute_searchlight_weights(sls, dists=None, radius=None, return_sparse=Fals
 
 
 def searchlight_hyperalignment(
-    X, Y, sls, sls_Y=None, sl_func=None, mat0=None, weights=None
+    X, Y, sls, sls_Y=None, sl_func=None, mat0=None, weights=None,n_jobs=1
 ):
     """
     Searchlight hyperalignment.
@@ -118,20 +118,34 @@ def searchlight_hyperalignment(
         sls_Y = sls
 
     mat = np.zeros((X.shape[1], Y.shape[1])) if mat0 is None else mat0.copy()
-
-    if weights is not None:
-        for sl_X, sl_Y, w in zip(sls, sls_Y, weights):
-            t = sl_func(X[:, sl_X], Y[:, sl_Y])
-            mat[np.ix_(sl_X, sl_Y)] += t * w[np.newaxis]
+    if n_jobs == 1:
+        if weights is not None:
+            for sl_X, sl_Y, w in zip(sls, sls_Y, weights):
+                t = sl_func(X[:, sl_X], Y[:, sl_Y])
+                mat[np.ix_(sl_X, sl_Y)] += t * w[np.newaxis]
+        else:
+            warnings.warn('Legacy, do not use this, use searchlight_weights(dists=None) to get uniform weights as input to this function instead')
+            for sl_X, sl_Y in zip(sls, sls_Y):
+                t = sl_func(X[:, sl_X], Y[:, sl_Y])
+                mat[np.ix_(sl_X, sl_Y)] += t
     else:
-        for sl_X, sl_Y in zip(sls, sls_Y):
-            t = sl_func(X[:, sl_X], Y[:, sl_Y])
-            mat[np.ix_(sl_X, sl_Y)] += t
+        with Parallel(n_jobs=n_jobs, batch_size=1, verbose=1) as parallel:
+            local_xfms = parallel(
+                delayed(sl_func)(X[:, sl_X], Y[:, sl_Y])
+                for sl_X, sl_Y in zip(sls, sls_Y)
+            )
+        if weights is not None:
+            for t, sl_X, sl_Y, w in zip(local_xfms, sls, sls_Y, weights):
+                mat[np.ix_(sl_X, sl_Y)] += t * w[np.newaxis]
+        else:
+            warnings.warn('Legacy, do not use this, use searchlight_weights(dists=None) to get uniform weights as input to this function instead')
+            for t, sl_X, sl_Y in zip(local_xfms, sls, sls_Y):
+                mat[np.ix_(sl_X, sl_Y)] += t
     return mat
 
 
 def searchlight_procrustes(
-    X, Y, sls, sls_Y=None, mat0=None, reflection=True, scaling=False, weights=None
+    X, Y, sls, sls_Y=None, mat0=None, reflection=True, scaling=False, weights=None,**kwargs
 ):
     """
     Searchlight hyperalignment using orthogonal Procrustes.
@@ -168,12 +182,12 @@ def searchlight_procrustes(
     """
     sl_func = functools.partial(procrustes, reflection=reflection, scaling=scaling)
     xfm = searchlight_hyperalignment(
-        X, Y, sls, sls_Y=sls_Y, sl_func=sl_func, mat0=mat0, weights=weights
+        X, Y, sls, sls_Y=sls_Y, sl_func=sl_func, mat0=mat0, weights=weights,**kwargs
     )
     return xfm
 
 
-def searchlight_ridge(X, Y, sls, sls_Y=None, mat0=None, alpha=1e3, weights=None):
+def searchlight_ridge(X, Y, sls, sls_Y=None, mat0=None, alpha=1e3, weights=None,**kwargs):
     """
     Searchlight hyperalignment using ridge regression.
 
@@ -207,7 +221,7 @@ def searchlight_ridge(X, Y, sls, sls_Y=None, mat0=None, alpha=1e3, weights=None)
     """
     sl_func = functools.partial(ridge, alpha=alpha)
     xfm = searchlight_hyperalignment(
-        X, Y, sls, sls_Y=sls_Y, sl_func=sl_func, mat0=mat0, weights=weights
+        X, Y, sls, sls_Y=sls_Y, sl_func=sl_func, mat0=mat0, weights=weights,**kwargs
     )
     return xfm
 
