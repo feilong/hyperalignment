@@ -26,13 +26,29 @@ def initialize_sparse_matrix(sls, nv=None, dtype=np.float64, cache_fn=None):
     """
     if cache_fn is not None and os.path.exists(cache_fn):
         return sparse.load_npz(cache_fn)
+    if len(sls):
+        indices = np.concatenate(sls).astype(np.int64)
+    else:
+        indices = np.zeros(0, dtype=np.int64)
     if nv is None:
-        nv = np.concatenate(sls).max() + 1
-    mat = sparse.lil_matrix((nv, nv), dtype=dtype)
-    for sl in sls:
-        mat[np.ix_(sl, sl)] = 1.
-    mat = mat.tocsc()
-    mat.data = np.zeros_like(mat.data, dtype=mat.data.dtype)
+        if not len(indices):
+            raise ValueError("`nv` must be specified when `sls` is empty.")
+        nv = int(indices.max()) + 1
+    # The CSR constructor below does not check bounds, so validate them here.
+    if len(indices) and (indices.min() < 0 or indices.max() >= nv):
+        raise IndexError(f"Searchlight indices must be in [0, {nv}) for nv={nv}.")
+
+    # Membership matrix: row i is the indicator of searchlight i. The product
+    # B.T @ B is nonzero exactly where two vertices share a searchlight, which
+    # is the sparsity pattern of a searchlight model.
+    indptr = np.zeros(len(sls) + 1, dtype=np.int64)
+    np.cumsum([len(sl) for sl in sls], out=indptr[1:])
+    data = np.ones(len(indices), dtype=np.float32)
+    B = sparse.csr_matrix((data, indices, indptr), shape=(len(sls), nv))
+
+    mat = (B.T @ B).tocsc()
+    mat.sum_duplicates()
+    mat.data = np.zeros(mat.nnz, dtype=dtype)
     if cache_fn is not None:
         os.makedirs(os.path.dirname(cache_fn), exist_ok=True)
         sparse.save_npz(cache_fn, mat)
